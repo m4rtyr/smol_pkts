@@ -3,7 +3,7 @@
  * @Date:   2020-01-24T20:25:01-06:00
  * @Email:  silentcat@protonmail.com
  * @Last modified by:   m4rtyr
- * @Last modified time: 2020-01-25T22:45:01-06:00
+ * @Last modified time: 2020-01-25T23:19:10-06:00
  */
 
 #include "pkt.h"
@@ -58,9 +58,9 @@ int set_pkt_insn(int bpf)
     BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, IPPROTO_TCP, 2, 0),
     BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, IPPROTO_UDP, 2, 0),
     BPF_STMT(BPF_RET+BPF_K,
-      sizeof(struct ether_header) + sizeof(IP) + sizeof(TCP)),
+      sizeof(ETH) + sizeof(IP) + sizeof(TCP)),
     BPF_STMT(BPF_RET+BPF_K,
-      sizeof(struct ether_header) + sizeof(IP) + sizeof(UDP)),
+      sizeof(ETH) + sizeof(IP) + sizeof(UDP)),
     BPF_STMT(BPF_RET+BPF_K, 0)
   };
 
@@ -118,7 +118,7 @@ void process_pkt(int bytes_read, char *data)
 
 void process_ether(char *data)
 {
-  struct ether_header *eth = (struct ether_header *) data;
+  ETH *eth = (ETH *) data;
   for (int i = 0; i < ETH_ADDR_LEN; i++) {
     printf("%02X%s", eth->ether_shost[i],
         (i == ETH_ADDR_LEN-1 ? "" : ":"));
@@ -129,7 +129,7 @@ void process_ether(char *data)
         (i == ETH_ADDR_LEN-1 ? "" : ":"));
   }
   printf(", ");
-  process_ip(data + sizeof(struct ether_header));
+  process_ip(data + sizeof(ETH));
 }
 
 void process_ip(char *data)
