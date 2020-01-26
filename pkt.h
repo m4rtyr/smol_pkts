@@ -3,7 +3,7 @@
  * @Date:   2020-01-24T20:25:03-06:00
  * @Email:  silentcat@protonmail.com
  * @Last modified by:   m4rtyr
- * @Last modified time: 2020-01-25T23:35:47-06:00
+ * @Last modified time: 2020-01-26T00:07:24-06:00
  */
 
 #ifndef PKT_H
@@ -47,6 +47,35 @@
 #define ETHERTYPE_RSN_PREAUTH   0x88c7  /* 802.11i / RSN Pre-Authentication */
 #define ETHERTYPE_PTP           0x88f7  /* IEEE 1588 Precision Time Protocol */
 #define ETHERTYPE_LOOPBACK      0x9000  /* used to test interfaces */
+
+#define ICMP_ECHO_REPLY         0x0
+#define ICMP_DEST_UNRCHBLE      0x3
+#define ICMP_SRC_QUENCH         0x4
+#define ICMP_ECHO               0x8
+#define ICMP_TIME_EXCEEDED      0xB
+#define ICMP_PARAM_PROBLEM      0xC
+#define ICMP_TIMESTAMP          0xD
+#define ICMP_TIMESTAMP_REPLY    0xE
+#define ICMP_INFO_REQ           0xF
+#define ICMP_INFO_REPLY         0x11
+
+#define print_cases() \
+  create_case(ICMP_ECHO_REPLY) \
+  create_case(ICMP_DEST_UNRCHBLE) \
+  create_case(ICMP_SRC_QUENCH) \
+  create_case(ICMP_ECHO) \
+  create_case(ICMP_TIME_EXCEEDED) \
+  create_case(ICMP_PARAM_PROBLEM) \
+  create_case(ICMP_TIMESTAMP) \
+  create_case(ICMP_TIMESTAMP_REPLY) \
+  create_case(ICMP_INFO_REQ) \
+  create_case(ICMP_INFO_REPLY) \
+
+#define create_case(icmp_case) \
+  case (icmp_case): \
+    type_str = #icmp_case;  \
+    break; \
+
 
 int sock;
 char *buff;
@@ -97,6 +126,14 @@ typedef struct udp
   uint16_t chksum;
 } UDP;
 
+typedef struct icmp
+{
+  uint8_t type;
+  uint8_t code;
+  uint16_t chksum;
+  uint32_t header;
+} ICMP;
+
 int open_dev(void);
 const char *get_device_name(void);
 int assoc_dev(int bpf, const char *device_name);
@@ -113,5 +150,6 @@ void process_layers(uint8_t proto, char *data);
 
 void process_tcp(char *data);
 void process_udp(char *data);
+void process_icmp(char *data);
 
 #endif

@@ -3,7 +3,7 @@
  * @Date:   2020-01-24T20:25:01-06:00
  * @Email:  silentcat@protonmail.com
  * @Last modified by:   m4rtyr
- * @Last modified time: 2020-01-25T23:38:04-06:00
+ * @Last modified time: 2020-01-26T00:10:01-06:00
  */
 
 #include "pkt.h"
@@ -53,14 +53,17 @@ int set_pkt_insn(int bpf)
 {
   struct bpf_insn insns[] = {
     BPF_STMT(BPF_LD+BPF_H+BPF_ABS, 12),
-    BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, ETHERTYPE_IP, 0, 5),
+    BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, ETHERTYPE_IP, 0, 7),
     BPF_STMT(BPF_LD+BPF_H+BPF_ABS, 23),
-    BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, IPPROTO_TCP, 2, 0),
-    BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, IPPROTO_UDP, 2, 0),
+    BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, IPPROTO_TCP, 3, 1),
+    BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, IPPROTO_UDP, 3, 1),
+    BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, IPPROTO_ICMP, 3, 0),
     BPF_STMT(BPF_RET+BPF_K,
       sizeof(ETH) + sizeof(IP) + sizeof(TCP)),
     BPF_STMT(BPF_RET+BPF_K,
       sizeof(ETH) + sizeof(IP) + sizeof(UDP)),
+    BPF_STMT(BPF_RET+BPF_K,
+      sizeof(ETH) + sizeof(IP) + sizeof(ICMP)),
     BPF_STMT(BPF_RET+BPF_K, 0)
   };
 
@@ -169,6 +172,9 @@ void process_layers(uint8_t proto, char *data)
     case IPPROTO_UDP:
       process_udp(data);
       break;
+    case IPPROTO_ICMP:
+      process_icmp(data);
+      break;
     default:
       printf("[Unknown: %d]\n", proto);
       break;
@@ -185,4 +191,17 @@ void process_udp(char *data)
 {
   UDP *udphdr = (UDP *) data;
   printf("[UDP] %d->%d\n", ntohs(udphdr->src), ntohs(udphdr->dst));
+}
+
+void process_icmp(char *data)
+{
+  char *type_str = "";
+  ICMP *icmphdr = (ICMP *) data;
+  switch (icmphdr->type) {
+    print_cases();
+    default:
+      type_str = "unknown";
+      break;
+  }
+  printf("[ICMP] type=%s, code=%d\n", type_str, icmphdr->code);
 }
