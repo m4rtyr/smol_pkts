@@ -3,7 +3,7 @@
  * @Date:   2020-01-24T20:25:01-06:00
  * @Email:  silentcat@protonmail.com
  * @Last modified by:   m4rtyr
- * @Last modified time: 2020-01-25T23:19:10-06:00
+ * @Last modified time: 2020-01-25T23:38:04-06:00
  */
 
 #include "pkt.h"
@@ -73,20 +73,33 @@ error:
   return FAILURE;
 }
 
-void event_loop()
+int set_up_socket()
 {
-  int bpf = open_dev(), buf_len = 0;
-  char *buffer = NULL;
-
+  int bpf = open_dev();
   check_no_out(bpf != -1);
   const char *device_name = get_device_name();
   check_no_out(device_name != NULL);
   device_name = "en0";
   check_no_out(assoc_dev(bpf, device_name) == SUCCESS);
   check_no_out(set_pkt_insn(bpf) == SUCCESS);
-  check(ioctl(bpf, BIOCGBLEN, &buf_len) == 0, "ioctl failed");
+  return bpf;
+error:
+  if (bpf != -1)
+    close(bpf);
+  return -1;
+}
+
+void event_loop()
+{
+  int bpf = set_up_socket(), buf_len = 0;
+  char *buffer = NULL;
+
+  check_no_out(bpf != -1);
   buffer = calloc(1, buf_len);
+  check(ioctl(bpf, BIOCGBLEN, &buf_len) == 0, "ioctl failed");
   check_mem(buffer);
+  sock = bpf;
+  buff = buffer;
   while (1) {
     int bytes_read = read(bpf, buffer, buf_len);
     if (bytes_read >= 0) {
@@ -96,12 +109,12 @@ void event_loop()
       break;
     }
   }
-  free(buffer);
-  close(bpf);
   return;
 error:
-  if (buffer)
+  if (buffer) {
     free(buffer);
+    buff = NULL;
+  }
   close(bpf);
 }
 

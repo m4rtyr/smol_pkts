@@ -3,7 +3,7 @@
  * @Date:   2020-01-24T20:25:03-06:00
  * @Email:  silentcat@protonmail.com
  * @Last modified by:   m4rtyr
- * @Last modified time: 2020-01-25T23:18:31-06:00
+ * @Last modified time: 2020-01-25T23:35:47-06:00
  */
 
 #ifndef PKT_H
@@ -25,7 +25,6 @@
 
 #include <ifaddrs.h>
 #include <net/if.h>
-//#include <net/ethernet.h>
 
 #define BPF_DEVICES_COUNT 99
 #define BPF_DEVICE_NAME_LEN 10
@@ -48,6 +47,9 @@
 #define ETHERTYPE_RSN_PREAUTH   0x88c7  /* 802.11i / RSN Pre-Authentication */
 #define ETHERTYPE_PTP           0x88f7  /* IEEE 1588 Precision Time Protocol */
 #define ETHERTYPE_LOOPBACK      0x9000  /* used to test interfaces */
+
+int sock;
+char *buff;
 
 /* NOTE: Some fields are combined together to prevent issues
  with bit endianness. */
@@ -99,6 +101,7 @@ int open_dev(void);
 const char *get_device_name(void);
 int assoc_dev(int bpf, const char *device_name);
 int set_pkt_insn(int bpf);
+int set_up_socket(void);
 void event_loop(void);
 void process_pkt(int bytes_read, char *data);
 
