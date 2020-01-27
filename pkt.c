@@ -3,7 +3,7 @@
  * @Date:   2020-01-24T20:25:01-06:00
  * @Email:  silentcat@protonmail.com
  * @Last modified by:   m4rtyr
- * @Last modified time: 2020-01-26T00:10:01-06:00
+ * @Last modified time: 2020-01-26T21:45:59-06:00
  */
 
 #include "pkt.h"
@@ -150,16 +150,9 @@ void process_ether(char *data)
 
 void process_ip(char *data)
 {
-  char str[IP_ADDR_LEN+1] = { 0 };
-  struct in_addr addr = { 0 };
   IP *iphdr = (IP *) data;
-  addr.s_addr = iphdr->src;
-  inet_ntop(PF_INET, &addr, str, sizeof(str));
-  printf("%s -> ", str);
-  addr.s_addr = iphdr->dst;
-  memset(str, 0, IP_ADDR_LEN+1);
-  inet_ntop(PF_INET, &addr, str, sizeof(str));
-  printf("%s, ", str);
+  print_ip_addr(iphdr->src, " -> ");
+  print_ip_addr(iphdr->dst, " ");
   process_layers(iphdr->proto, data + sizeof(IP));
 }
 
@@ -204,4 +197,13 @@ void process_icmp(char *data)
       break;
   }
   printf("[ICMP] type=%s, code=%d\n", type_str, icmphdr->code);
+}
+
+void print_ip_addr(uint32_t addr, const char *end)
+{
+  char str[IP_ADDR_LEN+1] = { 0 };
+  struct in_addr saddr = { 0 };
+  saddr.s_addr = addr;
+  inet_ntop(PF_INET, &saddr, str, sizeof(str));
+  printf("%s%s", str, end);
 }

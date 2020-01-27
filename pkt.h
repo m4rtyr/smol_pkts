@@ -3,7 +3,7 @@
  * @Date:   2020-01-24T20:25:03-06:00
  * @Email:  silentcat@protonmail.com
  * @Last modified by:   m4rtyr
- * @Last modified time: 2020-01-26T00:07:24-06:00
+ * @Last modified time: 2020-01-26T21:44:23-06:00
  */
 
 #ifndef PKT_H
@@ -151,5 +151,8 @@ void process_layers(uint8_t proto, char *data);
 void process_tcp(char *data);
 void process_udp(char *data);
 void process_icmp(char *data);
+
+/* Internal Processing of Packet Data */
+void print_ip_addr(uint32_t addr, const char *end);
 
 #endif
