@@ -3,7 +3,7 @@
  * @Date:   2020-01-24T20:25:03-06:00
  * @Email:  silentcat@protonmail.com
  * @Last modified by:   m4rtyr
- * @Last modified time: 2020-01-26T21:58:11-06:00
+ * @Last modified time: 2020-01-26T22:03:25-06:00
  */
 
 #ifndef PKT_H
@@ -59,6 +59,8 @@
 #define ICMP_INFO_REQ           0xF
 #define ICMP_INFO_REPLY         0x11
 
+#define SECONDS 1000000.0L // Number of microseconds in one second.
+
 #define print_cases() \
   create_case(ICMP_ECHO_REPLY) \
   create_case(ICMP_DEST_UNRCHBLE) \
@@ -79,6 +81,7 @@
 
 int sock;
 char *buff;
+extern time_t start;
 
 /* NOTE: Some fields are combined together to prevent issues
  with bit endianness. */

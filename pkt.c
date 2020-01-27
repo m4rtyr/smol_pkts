@@ -3,10 +3,12 @@
  * @Date:   2020-01-24T20:25:01-06:00
  * @Email:  silentcat@protonmail.com
  * @Last modified by:   m4rtyr
- * @Last modified time: 2020-01-26T22:00:01-06:00
+ * @Last modified time: 2020-01-26T22:04:19-06:00
  */
 
 #include "pkt.h"
+
+time_t start = 0;
 
 int open_dev()
 {
@@ -106,6 +108,7 @@ void event_loop(const char *device_name)
   check_mem(buffer);
   sock = bpf;
   buff = buffer;
+  time(&start);
   while (1) {
     int bytes_read = read(bpf, buffer, buf_len);
     if (bytes_read >= 0) {
@@ -129,7 +132,8 @@ void process_pkt(int bytes_read, char *data)
   char *ptr = data;
   while (ptr < (data + bytes_read)) {
     struct bpf_hdr *hdr = (struct bpf_hdr *) ptr;
-    printf("[%d] ", hdr->bh_tstamp.tv_sec);
+    printf("[%Lf] ",
+      hdr->bh_tstamp.tv_sec-(long)start + hdr->bh_tstamp.tv_usec / SECONDS);
     process_ether(ptr + hdr->bh_hdrlen);
     ptr += BPF_WORDALIGN(hdr->bh_hdrlen + hdr->bh_caplen);
   }
