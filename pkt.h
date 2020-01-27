@@ -3,7 +3,7 @@
  * @Date:   2020-01-24T20:25:03-06:00
  * @Email:  silentcat@protonmail.com
  * @Last modified by:   m4rtyr
- * @Last modified time: 2020-01-26T21:44:23-06:00
+ * @Last modified time: 2020-01-26T21:58:11-06:00
  */
 
 #ifndef PKT_H
@@ -138,8 +138,8 @@ int open_dev(void);
 const char *get_device_name(void);
 int assoc_dev(int bpf, const char *device_name);
 int set_pkt_insn(int bpf);
-int set_up_socket(void);
-void event_loop(void);
+int set_up_socket(const char *device_name);
+void event_loop(const char *device_name);
 void process_pkt(int bytes_read, char *data);
 
 /* Processing packet layers */

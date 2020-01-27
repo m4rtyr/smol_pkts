@@ -3,7 +3,7 @@
  * @Date:   2020-01-24T20:25:01-06:00
  * @Email:  silentcat@protonmail.com
  * @Last modified by:   m4rtyr
- * @Last modified time: 2020-01-26T21:45:59-06:00
+ * @Last modified time: 2020-01-26T22:00:01-06:00
  */
 
 #include "pkt.h"
@@ -76,15 +76,18 @@ error:
   return FAILURE;
 }
 
-int set_up_socket()
+int set_up_socket(const char *device_name)
 {
   int bpf = open_dev();
   check_no_out(bpf != -1);
-  const char *device_name = get_device_name();
-  check_no_out(device_name != NULL);
-  device_name = "en0";
+  if (device_name == NULL) {
+    const char *dev_name = get_device_name();
+    check_no_out(dev_name != NULL);
+    device_name = dev_name;
+  }
   check_no_out(assoc_dev(bpf, device_name) == SUCCESS);
   check_no_out(set_pkt_insn(bpf) == SUCCESS);
+  printf("Listening on %s...\n", device_name);
   return bpf;
 error:
   if (bpf != -1)
@@ -92,9 +95,9 @@ error:
   return -1;
 }
 
-void event_loop()
+void event_loop(const char *device_name)
 {
-  int bpf = set_up_socket(), buf_len = 0;
+  int bpf = set_up_socket(device_name), buf_len = 0;
   char *buffer = NULL;
 
   check_no_out(bpf != -1);
