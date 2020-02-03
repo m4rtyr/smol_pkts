@@ -3,143 +3,64 @@
  * @Date:   2020-01-24T20:25:01-06:00
  * @Email:  silentcat@protonmail.com
  * @Last modified by:   m4rtyr
- * @Last modified time: 2020-01-26T22:04:19-06:00
+ * @Last modified time: 2020-02-02T22:26:11-06:00
  */
 
 #include "pkt.h"
 
 time_t start = 0;
 
-int open_dev()
+pcap_t *open_dev(const char *dev)
 {
-  int bpf = 0;
-  char buf[BPF_DEVICE_NAME_LEN+1] = { 0 };
-  for (int i = 0; i < BPF_DEVICES_COUNT; i++) {
-    snprintf(buf, BPF_DEVICE_NAME_LEN+1, "/dev/bpf%i", i);
-    bpf = open(buf, O_RDWR);
-    if (bpf != -1)
-      break;
-  }
-  return bpf;
+  char errbuff[PCAP_ERRBUF_SIZE+1];
+  pcap_t *descr = pcap_open_live(dev, BUFSIZ, 1, TIMEOUT, errbuff);
+  check_mem(descr);
+  return descr;
+error:
+  log_err("%s", errbuff);
+  return NULL;
 }
 
 const char *get_device_name()
 {
-  struct ifaddrs *ifap = NULL;
-  check(getifaddrs(&ifap) == 0, "getifaddrs failed");
-  const char *name = (const char *) ifap->ifa_name;
-  freeifaddrs(ifap);
-  return name;
+  char errbuff[PCAP_ERRBUF_SIZE+1];
+  const char *dev = pcap_lookupdev(errbuff);
+  check_mem(dev);
+  return dev;
 error:
+  log_err("%s", errbuff);
   return NULL;
-}
-
-int assoc_dev(int bpf, const char *device_name)
-{
-  int opt = 1;
-  struct ifreq bound_if;
-  memset(&bound_if, 0, sizeof(bound_if));
-  if (strlen(device_name) < sizeof(bound_if.ifr_name))
-    strncpy(bound_if.ifr_name, device_name, strlen(device_name));
-  else
-    strncpy(bound_if.ifr_name, device_name, sizeof(bound_if.ifr_name));
-  check(ioctl(bpf, BIOCSETIF, &bound_if) == 0, "ioctl failed");
-  check(ioctl(bpf, BIOCPROMISC) == 0, "ioctl failed");
-  check(ioctl(bpf, BIOCIMMEDIATE, &opt) == 0, "ioctl failed");
-  return SUCCESS;
-error:
-  return FAILURE;
-}
-
-int set_pkt_insn(int bpf)
-{
-  struct bpf_insn insns[] = {
-    BPF_STMT(BPF_LD+BPF_H+BPF_ABS, 12),
-    BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, ETHERTYPE_IP, 0, 7),
-    BPF_STMT(BPF_LD+BPF_H+BPF_ABS, 23),
-    BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, IPPROTO_TCP, 3, 1),
-    BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, IPPROTO_UDP, 3, 1),
-    BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, IPPROTO_ICMP, 3, 0),
-    BPF_STMT(BPF_RET+BPF_K,
-      sizeof(ETH) + sizeof(IP) + sizeof(TCP)),
-    BPF_STMT(BPF_RET+BPF_K,
-      sizeof(ETH) + sizeof(IP) + sizeof(UDP)),
-    BPF_STMT(BPF_RET+BPF_K,
-      sizeof(ETH) + sizeof(IP) + sizeof(ICMP)),
-    BPF_STMT(BPF_RET+BPF_K, 0)
-  };
-
-  struct bpf_program prog = { 0 };
-  prog.bf_len = sizeof(insns) / sizeof(struct bpf_insn);
-  prog.bf_insns = insns;
-  check(ioctl(bpf, BIOCSETFNR, &prog) == 0, "ioctl failed");
-  return SUCCESS;
-error:
-  return FAILURE;
-}
-
-int set_up_socket(const char *device_name)
-{
-  int bpf = open_dev();
-  check_no_out(bpf != -1);
-  if (device_name == NULL) {
-    const char *dev_name = get_device_name();
-    check_no_out(dev_name != NULL);
-    device_name = dev_name;
-  }
-  check_no_out(assoc_dev(bpf, device_name) == SUCCESS);
-  check_no_out(set_pkt_insn(bpf) == SUCCESS);
-  printf("Listening on %s...\n", device_name);
-  return bpf;
-error:
-  if (bpf != -1)
-    close(bpf);
-  return -1;
 }
 
 void event_loop(const char *device_name)
 {
-  int bpf = set_up_socket(device_name), buf_len = 0;
-  char *buffer = NULL;
-
-  check_no_out(bpf != -1);
-  buffer = calloc(1, buf_len);
-  check(ioctl(bpf, BIOCGBLEN, &buf_len) == 0, "ioctl failed");
-  check_mem(buffer);
-  sock = bpf;
-  buff = buffer;
+  int cnt = 0;
+  char errbuff[PCAP_ERRBUF_SIZE+1];
+  s = (device_name == NULL) ? open_dev(get_device_name()) : open_dev(device_name);
+  check_no_out(s != NULL);
   time(&start);
-  while (1) {
-    int bytes_read = read(bpf, buffer, buf_len);
-    if (bytes_read >= 0) {
-      process_pkt(bytes_read, buffer);
-      memset(buffer, 0, buf_len);
-    } else {
+  pcap_setnonblock(s, 1, errbuff);
+
+  do {
+    if (s)
+      cnt = pcap_dispatch(s, 0, process_pkt, NULL);
+    else
       break;
-    }
-  }
+  } while (cnt >= 0);
   return;
 error:
-  if (buffer) {
-    free(buffer);
-    buff = NULL;
-  }
-  close(bpf);
+  log_err("%s", errbuff);
+  return;
 }
 
-void process_pkt(int bytes_read, char *data)
+void process_pkt(u_char *user,
+                const struct pcap_pkthdr *h, const u_char *bytes)
 {
-  char *ptr = data;
-  while (ptr < (data + bytes_read)) {
-    struct bpf_hdr *hdr = (struct bpf_hdr *) ptr;
-    printf("[%Lf] ",
-      hdr->bh_tstamp.tv_sec-(long)start + hdr->bh_tstamp.tv_usec / SECONDS);
-    process_ether(ptr + hdr->bh_hdrlen);
-    ptr += BPF_WORDALIGN(hdr->bh_hdrlen + hdr->bh_caplen);
-  }
+  printf("[%Lf] ", h->ts.tv_sec + h->ts.tv_usec / MILLION - (double)start);
+  process_ether(bytes);
 }
 
-void process_ether(char *data)
+void process_ether(const u_char *data)
 {
   ETH *eth = (ETH *) data;
   for (int i = 0; i < ETH_ADDR_LEN; i++) {
@@ -152,18 +73,22 @@ void process_ether(char *data)
         (i == ETH_ADDR_LEN-1 ? "" : ":"));
   }
   printf(", ");
-  process_ip(data + sizeof(ETH));
+  if (ntohs(eth->ether_type) == ETHERTYPE_IP)
+    process_ip(data + sizeof(ETH));
+  else
+    printf("???????\n");
 }
 
-void process_ip(char *data)
+void process_ip(const u_char *data)
 {
   IP *iphdr = (IP *) data;
+  printf("[IP] ");
   print_ip_addr(iphdr->src, " -> ");
-  print_ip_addr(iphdr->dst, " ");
+  print_ip_addr(iphdr->dst, ", ");
   process_layers(iphdr->proto, data + sizeof(IP));
 }
 
-void process_layers(uint8_t proto, char *data)
+void process_layers(uint8_t proto, const u_char *data)
 {
   switch (proto) {
     case IPPROTO_TCP:
@@ -181,19 +106,19 @@ void process_layers(uint8_t proto, char *data)
   }
 }
 
-void process_tcp(char *data)
+void process_tcp(const u_char *data)
 {
   TCP *tcphdr = (TCP *) data;
   printf("[TCP] %d->%d\n", ntohs(tcphdr->src), ntohs(tcphdr->dst));
 }
 
-void process_udp(char *data)
+void process_udp(const u_char *data)
 {
   UDP *udphdr = (UDP *) data;
   printf("[UDP] %d->%d\n", ntohs(udphdr->src), ntohs(udphdr->dst));
 }
 
-void process_icmp(char *data)
+void process_icmp(const u_char *data)
 {
   char *type_str = "";
   ICMP *icmphdr = (ICMP *) data;
