@@ -3,7 +3,7 @@
  * @Date:   2020-01-24T20:25:03-06:00
  * @Email:  silentcat@protonmail.com
  * @Last modified by:   m4rtyr
- * @Last modified time: 2020-01-26T22:03:25-06:00
+ * @Last modified time: 2020-02-02T22:11:30-06:00
  */
 
 #ifndef PKT_H
@@ -25,6 +25,7 @@
 
 #include <ifaddrs.h>
 #include <net/if.h>
+#include <pcap.h>
 
 #define BPF_DEVICES_COUNT 99
 #define BPF_DEVICE_NAME_LEN 10
@@ -34,6 +35,8 @@
 
 #define ETH_ADDR_LEN 6
 #define IP_ADDR_LEN  15
+
+#define TIMEOUT 1
 
 /* Taken from net/ethernet.h */
 
@@ -79,8 +82,7 @@
     break; \
 
 
-int sock;
-char *buff;
+pcap_t *s;
 extern time_t start;
 
 /* NOTE: Some fields are combined together to prevent issues
@@ -137,23 +139,20 @@ typedef struct icmp
   uint32_t header;
 } ICMP;
 
-int open_dev(void);
+pcap_t *open_dev(const char *dev);
 const char *get_device_name(void);
-int assoc_dev(int bpf, const char *device_name);
-int set_pkt_insn(int bpf);
-int set_up_socket(const char *device_name);
 void event_loop(const char *device_name);
-void process_pkt(int bytes_read, char *data);
+void process_pkt(u_char *user, const struct pcap_pkthdr *h, const u_char *bytes);
 
 /* Processing packet layers */
-void process_ether(char *data);
-void process_ip(char *data);
+void process_ether(const u_char *data);
+void process_ip(const u_char *data);
 
-void process_layers(uint8_t proto, char *data);
+void process_layers(uint8_t proto, const u_char *data);
 
-void process_tcp(char *data);
-void process_udp(char *data);
-void process_icmp(char *data);
+void process_tcp(const u_char *data);
+void process_udp(const u_char *data);
+void process_icmp(const u_char *data);
 
 /* Internal Processing of Packet Data */
 void print_ip_addr(uint32_t addr, const char *end);
