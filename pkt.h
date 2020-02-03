@@ -3,7 +3,7 @@
  * @Date:   2020-01-24T20:25:03-06:00
  * @Email:  silentcat@protonmail.com
  * @Last modified by:   m4rtyr
- * @Last modified time: 2020-02-02T22:15:51-06:00
+ * @Last modified time: 2020-02-02T22:22:52-06:00
  */
 
 #ifndef PKT_H
@@ -26,6 +26,7 @@
 #define IP_ADDR_LEN  15
 
 #define TIMEOUT 1
+#define MILLION 1000000.0L
 
 /* Taken from net/ethernet.h */
 

@@ -3,7 +3,7 @@
  * @Date:   2020-01-24T20:25:01-06:00
  * @Email:  silentcat@protonmail.com
  * @Last modified by:   m4rtyr
- * @Last modified time: 2020-02-02T22:12:49-06:00
+ * @Last modified time: 2020-02-02T22:22:21-06:00
  */
 
 #include "pkt.h"
@@ -56,6 +56,7 @@ error:
 void process_pkt(u_char *user,
                 const struct pcap_pkthdr *h, const u_char *bytes)
 {
+  printf("[%Lf] ", h->ts.tv_sec + h->ts.tv_usec / MILLION - (double)start);
   process_ether(bytes);
 }
 
