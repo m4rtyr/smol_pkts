@@ -3,7 +3,7 @@
  * @Date:   2020-01-24T20:25:03-06:00
  * @Email:  silentcat@protonmail.com
  * @Last modified by:   m4rtyr
- * @Last modified time: 2020-02-02T22:11:30-06:00
+ * @Last modified time: 2020-02-02T22:15:51-06:00
  */
 
 #ifndef PKT_H
@@ -12,19 +12,8 @@
 #include "dbg.h"
 
 #include <stdlib.h>
-
-#include <sys/types.h>
 #include <sys/time.h>
-#include <sys/ioctl.h>
-#include <net/bpf.h>
-
-#include <fcntl.h>
-#include <sys/socket.h>
 #include <arpa/inet.h>
-#include <unistd.h>
-
-#include <ifaddrs.h>
-#include <net/if.h>
 #include <pcap.h>
 
 #define BPF_DEVICES_COUNT 99
