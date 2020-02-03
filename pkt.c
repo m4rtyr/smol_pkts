@@ -3,7 +3,7 @@
  * @Date:   2020-01-24T20:25:01-06:00
  * @Email:  silentcat@protonmail.com
  * @Last modified by:   m4rtyr
- * @Last modified time: 2020-02-02T22:22:21-06:00
+ * @Last modified time: 2020-02-02T22:26:11-06:00
  */
 
 #include "pkt.h"
@@ -82,8 +82,9 @@ void process_ether(const u_char *data)
 void process_ip(const u_char *data)
 {
   IP *iphdr = (IP *) data;
+  printf("[IP] ");
   print_ip_addr(iphdr->src, " -> ");
-  print_ip_addr(iphdr->dst, " ");
+  print_ip_addr(iphdr->dst, ", ");
   process_layers(iphdr->proto, data + sizeof(IP));
 }
 
